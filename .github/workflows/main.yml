@@ -1,0 +1,38 @@
+name: 🚀 Deploy Marsa on push
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  web-deploy:
+    name: 🎉 Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🚚 Get latest code
+        uses: actions/checkout@v3
+
+      - name: 📂 Sync files
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server_dir: /home/miskit/marsa_Project
+
+      - name: Change projectPath
+        run: |
+          export DEPLOYPATH=/home/miskit/public_html/
+          export project_dir=/../../marsa_Project
+          /bin/mv * $DEPLOYPATH
+          cd project_dir
+          composer install
+          chmod 775 * -R
+          chmod 777 storage/ -R
+          chmod 777 bootstrap/ -R
+          chmod 777 artisan
+          ea-php82 artisan migrate
+          ea-php82 artisan cache:clear
+          ea-php82 artisan view:clear
+          ln -sf ~miskit/marsa_Project/storage/app/public ~miskit/public_html/marsa
